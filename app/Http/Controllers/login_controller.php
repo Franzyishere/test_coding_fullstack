@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,18 +10,20 @@ class LoginController extends Controller
 {
     public function login(Request $request)
     {
-        $credentials = $request->only('name','email', 'phone');
-
+        $credentials = $request->validate([
+            'name'  => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'phone' => ['required'],
+        ]);
+ 
         if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            return response()->json([
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-            ]);
+            $request->session()->regenerate();
+ 
+            return redirect()->intended('dashboard');
         }
-
-        return response()->json(['message' => 'Unauthorized'], 401);
+ 
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ])->onlyInput('email');
     }
 }
